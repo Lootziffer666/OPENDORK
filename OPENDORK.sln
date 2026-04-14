@@ -1,0 +1,32 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "opendork-core", "opendork-core\opendork-core.csproj", "{AA8F00F0-C031-4105-8E42-E4B703E1FCDA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "opendork-rules", "opendork-rules\opendork-rules.csproj", "{C716E574-C4F8-4F7C-BE77-ED95B1C86EFB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "opendork-browser-playwright", "opendork-browser-playwright\opendork-browser-playwright.csproj", "{D8F95491-474E-4233-8E95-6726D6EE7D44}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "opendork-wrapper-bridge", "opendork-wrapper-bridge\opendork-wrapper-bridge.csproj", "{4800EA01-C8A7-4914-8F6E-BE1CD8D8D12C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "opendork-tests", "opendork-tests\opendork-tests.csproj", "{38F74E11-5C9F-4B8D-B6AB-F31F37AA4C27}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AA8F00F0-C031-4105-8E42-E4B703E1FCDA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA8F00F0-C031-4105-8E42-E4B703E1FCDA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C716E574-C4F8-4F7C-BE77-ED95B1C86EFB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C716E574-C4F8-4F7C-BE77-ED95B1C86EFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8F95491-474E-4233-8E95-6726D6EE7D44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8F95491-474E-4233-8E95-6726D6EE7D44}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4800EA01-C8A7-4914-8F6E-BE1CD8D8D12C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4800EA01-C8A7-4914-8F6E-BE1CD8D8D12C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{38F74E11-5C9F-4B8D-B6AB-F31F37AA4C27}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{38F74E11-5C9F-4B8D-B6AB-F31F37AA4C27}.Debug|Any CPU.Build.0 = Debug|Any CPU
+	EndGlobalSection
+EndGlobal
