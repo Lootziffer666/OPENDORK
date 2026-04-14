@@ -1,0 +1,16 @@
+{
+  "routes": [
+    { "pattern": "\\[STATUS:\\s*GOLD\\]", "route": "Gold" },
+    { "pattern": "\\[STATUS:\\s*CRAP\\]", "route": "Crap" },
+    { "pattern": "\\[STATUS:\\s*REWORK\\]", "route": "Rework" }
+  ],
+  "limits": [
+    { "pattern": "rate limit" },
+    { "pattern": "message cap" },
+    { "pattern": "\\[STATUS:\\s*LIMIT\\]" }
+  ],
+  "selectors": [
+    { "provider": "generic", "inputSelector": "textarea", "sendSelector": "button[type=submit]", "outputSelector": "main" }
+  ],
+  "timeoutSeconds": 90
+}

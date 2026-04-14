@@ -1,0 +1,5 @@
+[
+  { "role": "Generator", "userDataDir": "profiles/generator", "startUrl": "https://example.com", "provider": "provider-a" },
+  { "role": "Reviewer", "userDataDir": "profiles/reviewer", "startUrl": "https://example.com", "provider": "provider-b" },
+  { "role": "Comparator", "userDataDir": "profiles/comparator", "startUrl": "https://example.com", "provider": "provider-c" }
+]
