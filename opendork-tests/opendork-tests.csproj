@@ -9,5 +9,10 @@
     <ProjectReference Include="..\opendork-core\opendork-core.csproj" />
     <ProjectReference Include="..\opendork-rules\opendork-rules.csproj" />
     <ProjectReference Include="..\opendork-wrapper-bridge\opendork-wrapper-bridge.csproj" />
+    <ProjectReference Include="..\opendork-abstractions\opendork-abstractions.csproj" />
+    <ProjectReference Include="..\opendork-providers\opendork-providers.csproj" />
+    <ProjectReference Include="..\opendork-validation\opendork-validation.csproj" />
+    <ProjectReference Include="..\opendork-state\opendork-state.csproj" />
+    <ProjectReference Include="..\opendork-artifacts\opendork-artifacts.csproj" />
   </ItemGroup>
 </Project>

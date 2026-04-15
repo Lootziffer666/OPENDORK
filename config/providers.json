@@ -1,0 +1,9 @@
+{
+  "chains": {
+    "interactive": ["openai-compatible", "local-fallback"],
+    "batch": ["openai-compatible", "local-fallback"],
+    "overnight_safe": ["local-fallback", "openai-compatible"],
+    "overnight_aggressive": ["openai-compatible", "local-fallback"]
+  },
+  "retry": { "maxRetries": 2, "cooldownSeconds": 120 }
+}
