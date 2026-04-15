@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OPENDORK Control Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                500: '#6d28d9',
+                600: '#5b21b6'
+              }
+            }
+          }
+        }
+      }
+    </script>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <div class="mx-auto max-w-7xl p-6 lg:p-10">
+      <header class="mb-8 rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-xl shadow-black/20">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Taildrops-style UI</p>
+            <h1 class="text-2xl font-semibold md:text-3xl">OPENDORK Control Center</h1>
+            <p class="mt-1 text-sm text-slate-400">Unified runtime dashboard for jobs, models, spend and artifacts.</p>
+          </div>
+          <div class="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-300">
+            Runtime: <span class="font-medium">online</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4" id="stats-grid"></section>
+
+      <main class="grid gap-6 lg:grid-cols-5">
+        <section class="space-y-6 lg:col-span-3">
+          <article class="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+            <h2 class="mb-4 text-lg font-semibold">Run Job</h2>
+            <form id="run-form" class="grid gap-4 md:grid-cols-2">
+              <label class="space-y-2 text-sm md:col-span-2">
+                <span class="text-slate-300">Prompt</span>
+                <textarea id="prompt" required rows="4" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none focus:border-brand-500"></textarea>
+              </label>
+              <label class="space-y-2 text-sm">
+                <span class="text-slate-300">Runtime profile</span>
+                <select id="profile" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm">
+                  <option>interactive</option>
+                  <option>batch</option>
+                  <option>overnight_safe</option>
+                  <option>overnight_aggressive</option>
+                </select>
+              </label>
+              <label class="space-y-2 text-sm">
+                <span class="text-slate-300">Model</span>
+                <select id="model" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm"></select>
+              </label>
+              <div class="md:col-span-2 flex items-center justify-between gap-4">
+                <p class="text-xs text-slate-400">CLI preview: <code id="cli-preview" class="text-brand-500"></code></p>
+                <button type="submit" class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-medium hover:bg-brand-500">Queue Run</button>
+              </div>
+            </form>
+          </article>
+
+          <article class="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+            <div class="mb-4 flex items-center justify-between">
+              <h2 class="text-lg font-semibold">Model Catalog</h2>
+              <button id="add-model-btn" class="rounded-lg border border-slate-700 px-3 py-1.5 text-xs hover:border-brand-500">Add Model</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-sm">
+                <thead class="text-left text-slate-400">
+                  <tr>
+                    <th class="py-2 pr-4">Model</th>
+                    <th class="py-2 pr-4">Provider</th>
+                    <th class="py-2 pr-4">Input/1K</th>
+                    <th class="py-2 pr-4">Output/1K</th>
+                    <th class="py-2 pr-4">Status</th>
+                    <th class="py-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="models-table" class="divide-y divide-slate-800"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <aside class="space-y-6 lg:col-span-2">
+          <article class="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+            <h2 class="mb-4 text-lg font-semibold">Recent Runs</h2>
+            <ul id="runs-list" class="space-y-3"></ul>
+          </article>
+
+          <article class="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+            <h2 class="mb-4 text-lg font-semibold">Artifacts</h2>
+            <ul class="space-y-3 text-sm text-slate-300">
+              <li class="flex justify-between"><span>results/raw</span><span id="raw-count">0</span></li>
+              <li class="flex justify-between"><span>results/validated</span><span id="validated-count">0</span></li>
+              <li class="flex justify-between"><span>results/rejected</span><span id="rejected-count">0</span></li>
+              <li class="flex justify-between"><span>results/gold</span><span id="gold-count">0</span></li>
+              <li class="flex justify-between"><span>results/reports</span><span id="report-count">0</span></li>
+            </ul>
+          </article>
+        </aside>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

@@ -5,6 +5,7 @@ namespace OpenDork.WrapperBridge;
 public record WrapperStatus(string ActiveProvider, string ActiveModel, bool Ready, DateTimeOffset? ResetAtUtc);
 public record SwitchRequest(string Reason, string FromProvider, DateTimeOffset RequestedAtUtc);
 
+[Obsolete("Deprecated transitional component. Use opendork-cli + opendork-state directly.")]
 public sealed class FileIpcBridge
 {
     public string StatusFile { get; }

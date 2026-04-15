@@ -1,86 +1,89 @@
-# OPENDORK MVP (Deterministic, AI-free Orchestrator)
+# OPENDORK Platform (Unified Runtime)
 
-## High-level design
-OPENDORK is split into deterministic modules with strict separation:
-- **`opendork-core`**: queue/state machine, retry/backoff, syntax gate, deterministic routing execution, append-only persistence.
-- **`opendork-browser-playwright`**: browser adapter seam for Playwright + persistent context per role.
-- **`opendork-rules`**: data-driven rules (routing, limits, selectors, timeouts).
-- **`opendork-wrapper-bridge`**: optional file-based JSON IPC to existing wrapper.
-- **`opendork-tests`**: unit/integration-lite tests for rules, state machine, retry, IPC, failure handling.
+OPENDORK ist jetzt das einzige Runtime-Produkt. Die früheren Guard-/LiteLLM-Konzepte sind in OPENDORK-nativen Modulen integriert (kein externer Guard-Prozess, keine separate Guard-CLI).
 
-Runtime flow:
-1. Prompt job dequeued.
-2. Generator role runs in browser adapter.
-3. Optional syntax gate (e.g., JS/TS).
-4. Reviewer role classifies with `[STATUS: ...]` tags.
-5. Route to GOLD / CRAP / REWORK.
-6. Rework loops by deterministic retry policy.
-7. Append-only logs and snapshots persisted every iteration.
+## Module
 
-## Project structure
-- `OPENDORK.sln`
-- `opendork-core/`
-- `opendork-rules/`
-- `opendork-browser-playwright/`
-- `opendork-wrapper-bridge/`
-- `opendork-tests/`
-- `config/rules.json`
-- `config/browser-roles.json`
+- `opendork-abstractions`: Kernmodelle und Interfaces.
+- `opendork-core`: Orchestrator für Runs/Candidates.
+- `opendork-providers`: LiteLLM-ähnliches Gateway (Model Catalog, Failover, Cooldown, Budget, Cache).
+- `opendork-validation`: Plugin-basierte Validierungspipelines.
+- `opendork-state`: SQLite-State inkl. Migrationen und Spend-Logs.
+- `opendork-artifacts`: Export für raw/validated/rejected/gold + diffs/reports/replays.
+- `opendork-cli`: zentrales Kommando-Interface.
+- `opendork-wrapper-bridge`: deprecated Übergangskomponente.
 
-## How to run
-1. Install .NET 8 SDK on Windows.
-2. Open `OPENDORK.sln` in Visual Studio or run CLI build/test.
-3. Configure rules and role profiles in `config/`.
-4. Integrate `PlaywrightBrowserAdapter` with Microsoft.Playwright runtime methods for production browser control.
+## CLI
 
-## Persistent browser contexts
-`browser-roles.json` defines one profile directory per role:
-- Generator -> `profiles/generator`
-- Reviewer -> `profiles/reviewer`
-- Comparator -> `profiles/comparator`
+```bash
+opendork-cli run "prompt" interactive gpt-4o
+opendork-cli chat gpt-4o "Sag Hallo"
+opendork-cli status
+opendork-cli report
+opendork-cli models list
+opendork-cli models info gpt-4o
+opendork-cli models add my-model openai-compatible 0.01 0.02
+opendork-cli models remove my-model
+```
 
-This keeps sessions isolated and restart-safe.
+Weitere Commands: `jobs`, `replay`.
 
-## Rules/configuration
-`config/rules.json` controls:
-- route tags (`[STATUS: GOLD|CRAP|REWORK]`)
-- limit regexes
-- provider selectors
-- timeout settings
+## LiteLLM-ähnliche Features in OPENDORK
 
-No business logic is in UI; core consumes rules deterministically.
-
-## Replay and logging
-Append-only files under chosen log root:
-- `iterations.jsonl`
-- `events.jsonl`
-- `failures.jsonl`
-- `gold.md`
-- `crap.md`
-- `rework.md`
-- queue snapshots (`snapshots.jsonl` path configured by caller)
-
-This supports morning review and deterministic replay.
-
-## In MVP / Out of MVP
-### In MVP
-- deterministic orchestrator core
-- config-driven routing/limits
-- browser adapter boundary for Playwright integration
-- optional wrapper IPC bridge
-- retry/backoff and failure states
-
-### Out of MVP
-- embedded AI/agents/autonomous strategy
-- custom browser/electron monolith
-- scheduler as orchestration brain
-- multi-user orchestration
+- Model Catalog in `config/providers.json`.
+- Provider-Routing mit Retry, Failover, Cooldown.
+- Budget Guard (Default: 5 USD / 24h) und Spend-Tracking.
+- 24h Response Cache.
+- Kosten-/Token-Usage pro Completion.
+- SQLite `spend_logs` für Reporting.
 
 
-## Verification policy
-- This repository must only report checks that were actually executed in the current environment.
-- In this container, `dotnet` is unavailable, so `dotnet build/test` cannot be executed here.
-- Required local validation on a Windows machine with .NET 8 SDK:
-  - `dotnet build OPENDORK.sln`
-  - `dotnet test OPENDORK.sln`
+## GUI
 
+A new Taildrops-inspired web GUI is available at `opendork-gui/` with:
+
+- runtime stats cards
+- run form with CLI preview
+- model catalog management
+- recent runs + artifact counters
+
+Run locally:
+
+```bash
+cd opendork-gui
+python3 -m http.server 8080
+```
+
+Then open `http://localhost:8080`.
+
+## Config
+
+- `config/providers.json`
+- `config/validation-profiles.json`
+- `config/runtime-profiles.json`
+
+Runtime-Profile:
+
+- `interactive`
+- `batch`
+- `overnight_safe`
+- `overnight_aggressive`
+
+## Persistenz
+
+SQLite Tabellen:
+
+- `runs`
+- `candidates`
+- `provider_attempts`
+- `validation_results`
+- `events`
+- `spend_logs`
+
+## Build/Test
+
+```bash
+dotnet restore OPENDORK.sln
+dotnet build OPENDORK.sln
+dotnet test OPENDORK.sln
+```
