@@ -1,9 +1,18 @@
 {
-  "chains": {
-    "interactive": ["openai-compatible", "local-fallback"],
-    "batch": ["openai-compatible", "local-fallback"],
-    "overnight_safe": ["local-fallback", "openai-compatible"],
-    "overnight_aggressive": ["openai-compatible", "local-fallback"]
-  },
-  "retry": { "maxRetries": 2, "cooldownSeconds": 120 }
+  "models": [
+    {
+      "modelName": "gpt-4o",
+      "providerClient": "openai-compatible",
+      "inputCostPer1K": 0.005,
+      "outputCostPer1K": 0.015,
+      "enabled": true
+    },
+    {
+      "modelName": "gpt-4o-mini",
+      "providerClient": "local-fallback",
+      "inputCostPer1K": 0.0,
+      "outputCostPer1K": 0.0,
+      "enabled": true
+    }
+  ]
 }

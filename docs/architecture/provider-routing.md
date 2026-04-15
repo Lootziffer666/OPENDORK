@@ -1,9 +1,13 @@
-# Provider Routing
+# Provider Routing & Lite Gateway
 
-Provider routing is OPENDORK-native and absorbs the legacy proxy failover concepts:
+OPENDORK enthält ein LiteLLM-ähnliches Gateway in `opendork-providers`:
 
-- `ProviderRouter`: retries provider calls and fails over to next provider in chain.
-- `ProviderCooldownStore`: blocks providers temporarily after repeated failures.
-- `ProviderHealthTracker`: tracks rolling failures.
-- `ProviderReputationTracker`: biases provider order by observed success.
-- `OpenAiCompatibleClient` and `LocalFallbackClient`: first runnable provider clients.
+- `ProviderModelCatalog`: model registry (list/add/remove/info) aus `config/providers.json`.
+- `LiteLlmStyleGateway`: completion entrypoint mit cost estimation, cache und budget checks.
+- `ProviderRouter`: retries/failover.
+- `ProviderCooldownStore`: temporäre Sperre bei wiederholten Fehlern.
+- `ProviderHealthTracker` + `ProviderReputationTracker`: priorisieren stabile Provider.
+- `BudgetGuard`: hartes Spending-Limit im Zeitfenster.
+- `ResponseCache`: TTL-basierter Prompt+Model Cache.
+
+Damit wird der frühere Guard-/Proxy-Zweck OPENDORK-intern umgesetzt.

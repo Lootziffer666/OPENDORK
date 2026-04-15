@@ -1,64 +1,67 @@
 # OPENDORK Platform (Unified Runtime)
 
-OPENDORK is now the single product/runtime identity. Legacy guard capabilities were absorbed as native modules, so there is no separate guard process, CLI, or config world.
+OPENDORK ist jetzt das einzige Runtime-Produkt. Die früheren Guard-/LiteLLM-Konzepte sind in OPENDORK-nativen Modulen integriert (kein externer Guard-Prozess, keine separate Guard-CLI).
 
-## Modules
+## Module
 
-- `opendork-abstractions`: shared models and interfaces (`RunContext`, `Candidate`, `ProviderAttempt`, `ValidationResult`, `EventRecord`, `ArtifactRecord`).
-- `opendork-core`: orchestration runtime (`RunOrchestrator`) and legacy deterministic MVP engine.
-- `opendork-providers`: provider chain resolution, failover, retry/cooldown, health and reputation tracking.
-- `opendork-validation`: plugin validators and profile-based validation pipelines.
-- `opendork-state`: SQLite state schema + migration + persistence.
-- `opendork-artifacts`: candidate export, diffs, reports, replay file layout.
-- `opendork-cli`: first-class operational command surface.
-- `opendork-rules`, `opendork-browser-playwright`: rules + browser integration seams.
-- `opendork-wrapper-bridge`: deprecated transitional shim (do not extend).
-- `opendork-tests`: structure and behavior tests.
+- `opendork-abstractions`: Kernmodelle und Interfaces.
+- `opendork-core`: Orchestrator für Runs/Candidates.
+- `opendork-providers`: LiteLLM-ähnliches Gateway (Model Catalog, Failover, Cooldown, Budget, Cache).
+- `opendork-validation`: Plugin-basierte Validierungspipelines.
+- `opendork-state`: SQLite-State inkl. Migrationen und Spend-Logs.
+- `opendork-artifacts`: Export für raw/validated/rejected/gold + diffs/reports/replays.
+- `opendork-cli`: zentrales Kommando-Interface.
+- `opendork-wrapper-bridge`: deprecated Übergangskomponente.
 
 ## CLI
 
-`opendork-cli` commands:
+```bash
+opendork-cli run "prompt" interactive gpt-4o
+opendork-cli chat gpt-4o "Sag Hallo"
+opendork-cli status
+opendork-cli report
+opendork-cli models list
+opendork-cli models info gpt-4o
+opendork-cli models add my-model openai-compatible 0.01 0.02
+opendork-cli models remove my-model
+```
 
-- `run`
-- `status`
-- `jobs`
-- `replay`
-- `report`
+Weitere Commands: `jobs`, `replay`.
 
-## Config files
+## LiteLLM-ähnliche Features in OPENDORK
+
+- Model Catalog in `config/providers.json`.
+- Provider-Routing mit Retry, Failover, Cooldown.
+- Budget Guard (Default: 5 USD / 24h) und Spend-Tracking.
+- 24h Response Cache.
+- Kosten-/Token-Usage pro Completion.
+- SQLite `spend_logs` für Reporting.
+
+## Config
 
 - `config/providers.json`
 - `config/validation-profiles.json`
 - `config/runtime-profiles.json`
 
-Supported runtime profiles:
+Runtime-Profile:
 
 - `interactive`
 - `batch`
 - `overnight_safe`
 - `overnight_aggressive`
 
-## Persistence + artifacts
+## Persistenz
 
-SQLite tables:
+SQLite Tabellen:
 
 - `runs`
 - `candidates`
 - `provider_attempts`
 - `validation_results`
 - `events`
+- `spend_logs`
 
-Artifact tree:
-
-- `results/raw`
-- `results/validated`
-- `results/rejected`
-- `results/gold`
-- `results/diffs`
-- `results/reports`
-- `results/replays`
-
-## Build/test
+## Build/Test
 
 ```bash
 dotnet restore OPENDORK.sln

@@ -1,10 +1,9 @@
 # Runtime Flow
 
-OPENDORK now runs all orchestration through `opendork-cli` and `RunOrchestrator`.
-
-1. `run` command builds a `RunContext` from CLI args.
-2. Providers are selected via `ProviderChainResolver` and executed by `ProviderRouter` with retries and cooldown.
-3. Raw candidate is persisted in SQLite and exported under `results/raw`.
-4. `ValidationPipeline` executes plugin validators.
-5. Candidate is promoted to `validated`, `rejected`, or `gold` and exported.
-6. Events and validation outcomes are journaled in SQLite tables for replay/report.
+1. `opendork-cli run` oder `opendork-cli chat` startet einen Request.
+2. `LiteLlmStyleGateway` löst Modell + Provider auf, prüft Cache und Budget.
+3. Bei Misses ruft `ProviderRouter` Provider mit Retry/Failover/Cooldown an.
+4. Usage + Spend werden in SQLite (`spend_logs`) gespeichert.
+5. `RunOrchestrator` persistiert Kandidaten und führt `ValidationPipeline` aus.
+6. Ergebnis wird nach `results/raw|validated|rejected|gold` exportiert.
+7. Status/Report verwenden SQLite + Artifacts.

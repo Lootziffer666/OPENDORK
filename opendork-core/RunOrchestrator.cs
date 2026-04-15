@@ -8,40 +8,43 @@ namespace OpenDork.Core;
 
 public sealed class RunOrchestrator
 {
-    private readonly ProviderRouter _providerRouter;
-    private readonly ProviderChainResolver _chainResolver;
+    private readonly LiteLlmStyleGateway _gateway;
     private readonly ValidationPipeline _pipeline;
     private readonly SqliteStateStore _state;
     private readonly ArtifactService _artifacts;
-    private readonly IReadOnlyList<IProviderClient> _providers;
 
     public RunOrchestrator(
-        ProviderRouter providerRouter,
-        ProviderChainResolver chainResolver,
+        LiteLlmStyleGateway gateway,
         ValidationPipeline pipeline,
         SqliteStateStore state,
-        ArtifactService artifacts,
-        IEnumerable<IProviderClient> providers)
+        ArtifactService artifacts)
     {
-        _providerRouter = providerRouter;
-        _chainResolver = chainResolver;
+        _gateway = gateway;
         _pipeline = pipeline;
         _state = state;
         _artifacts = artifacts;
-        _providers = providers.ToList();
     }
 
-    public async Task<Candidate> RunAsync(RunContext context, CancellationToken ct = default)
+    public async Task<Candidate> RunAsync(RunContext context, string modelName = "gpt-4o", CancellationToken ct = default)
     {
         _state.Initialize();
         _state.UpsertRun(context);
         _state.InsertEvent(new EventRecord(Guid.NewGuid().ToString("N"), context.RunId, "run_start", "run started", DateTimeOffset.UtcNow));
 
-        var chain = _chainResolver.Resolve(_providers, context.RuntimeProfile);
-        var response = await _providerRouter.RouteWithFailoverAsync(chain, context.Prompt, 2, ct);
-        _state.InsertAttempt(new ProviderAttempt(Guid.NewGuid().ToString("N"), context.RunId, response.ProviderName, response.Success, response.Message, DateTimeOffset.UtcNow));
+        var gatewayResult = await _gateway.CompleteAsync(modelName, context.Prompt, context.RuntimeProfile, ct);
+        _state.InsertAttempt(new ProviderAttempt(Guid.NewGuid().ToString("N"), context.RunId, gatewayResult.Response.ProviderName, gatewayResult.Response.Success, gatewayResult.Response.Message, DateTimeOffset.UtcNow));
+        _state.InsertSpend(new SpendRecord(
+            Guid.NewGuid().ToString("N"),
+            context.RunId,
+            gatewayResult.Model,
+            gatewayResult.Response.ProviderName,
+            gatewayResult.Usage.EstimatedCost,
+            gatewayResult.Usage.PromptTokens,
+            gatewayResult.Usage.CompletionTokens,
+            gatewayResult.Usage.CacheHit,
+            DateTimeOffset.UtcNow));
 
-        var candidate = new Candidate(Guid.NewGuid().ToString("N"), context.RunId, response.Content, CandidateState.Raw, 0, DateTimeOffset.UtcNow);
+        var candidate = new Candidate(Guid.NewGuid().ToString("N"), context.RunId, gatewayResult.Response.Content, CandidateState.Raw, 0, DateTimeOffset.UtcNow);
         _state.InsertCandidate(candidate);
         _artifacts.ExportCandidate(candidate);
 

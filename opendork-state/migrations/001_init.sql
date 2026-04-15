@@ -44,3 +44,16 @@ CREATE TABLE IF NOT EXISTS events (
   created_at_utc TEXT NOT NULL,
   FOREIGN KEY(run_id) REFERENCES runs(id)
 );
+
+CREATE TABLE IF NOT EXISTS spend_logs (
+  id TEXT PRIMARY KEY,
+  run_id TEXT NOT NULL,
+  model_name TEXT NOT NULL,
+  provider_name TEXT NOT NULL,
+  cost_usd REAL NOT NULL,
+  prompt_tokens INTEGER NOT NULL,
+  completion_tokens INTEGER NOT NULL,
+  cache_hit INTEGER NOT NULL,
+  created_at_utc TEXT NOT NULL,
+  FOREIGN KEY(run_id) REFERENCES runs(id)
+);

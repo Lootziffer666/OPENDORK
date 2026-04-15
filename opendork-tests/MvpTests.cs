@@ -25,14 +25,24 @@ public class MvpTests
     }
 
     [Fact]
-    public async Task Provider_Failover_And_Cooldown_Work()
+    public async Task Gateway_Provides_Failover_Budget_And_Cache()
     {
-        var cooldowns = new ProviderCooldownStore();
-        var router = new ProviderRouter(cooldowns, new ProviderHealthTracker(), new ProviderReputationTracker());
-        var result = await router.RouteWithFailoverAsync([new AlwaysFailProvider("p1"), new LocalFallbackClient("local")], "hello", 1);
-        Assert.True(result.Success);
-        Assert.Equal("local", result.ProviderName);
-        Assert.True(cooldowns.IsCoolingDown("p1"));
+        var catalog = new ProviderModelCatalog([new ProviderModelDefinition("gpt-4o", "broken", 0.01m, 0.01m)]);
+        var gateway = new LiteLlmStyleGateway(
+            catalog,
+            new ProviderRouter(new ProviderCooldownStore(), new ProviderHealthTracker(), new ProviderReputationTracker()),
+            new ProviderChainResolver(),
+            [new AlwaysFailProvider("broken"), new LocalFallbackClient("local-fallback")],
+            new BudgetGuard(10m, TimeSpan.FromDays(1)),
+            new ResponseCache(TimeSpan.FromMinutes(10)));
+
+        var first = await gateway.CompleteAsync("gpt-4o", "hello [STATUS: GOLD]", "interactive");
+        var second = await gateway.CompleteAsync("gpt-4o", "hello [STATUS: GOLD]", "interactive");
+
+        Assert.True(first.Response.Success);
+        Assert.Equal("local-fallback", first.Response.ProviderName);
+        Assert.True(second.Usage.CacheHit);
+        Assert.Equal(0m, second.Usage.EstimatedCost);
     }
 
     [Fact]
@@ -46,24 +56,30 @@ public class MvpTests
     }
 
     [Fact]
-    public async Task Orchestrator_Persists_State_And_Artifacts()
+    public async Task Orchestrator_Persists_State_Artifacts_And_Spend()
     {
         var temp = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(temp);
         var run = new RunContext("run1", "job1", "hello [STATUS: GOLD]", "interactive", DateTimeOffset.UtcNow);
 
-        var orchestrator = new RunOrchestrator(
+        var gateway = new LiteLlmStyleGateway(
+            new ProviderModelCatalog([new ProviderModelDefinition("gpt-4o", "openai-compatible", 0.01m, 0.01m)]),
             new ProviderRouter(new ProviderCooldownStore(), new ProviderHealthTracker(), new ProviderReputationTracker()),
             new ProviderChainResolver(),
-            new ValidationPipeline([new LengthValidator(), new StatusTagValidator()]),
-            new SqliteStateStore(Path.Combine(temp, "state.db")),
-            new ArtifactService(temp),
-            [new OpenAiCompatibleClient()]);
+            [new OpenAiCompatibleClient()],
+            new BudgetGuard(10m, TimeSpan.FromDays(1)),
+            new ResponseCache(TimeSpan.FromHours(1)));
 
-        var candidate = await orchestrator.RunAsync(run);
+        var store = new SqliteStateStore(Path.Combine(temp, "state.db"));
+        var orchestrator = new RunOrchestrator(gateway, new ValidationPipeline([new LengthValidator(), new StatusTagValidator()]), store, new ArtifactService(temp));
+
+        var candidate = await orchestrator.RunAsync(run, "gpt-4o");
         Assert.Contains(candidate.State, [CandidateState.Validated, CandidateState.Gold]);
         Assert.True(File.Exists(Path.Combine(temp, "state.db")));
         Assert.True(Directory.EnumerateFiles(Path.Combine(temp, "results", "raw")).Any());
+
+        var dashboard = store.GetDashboard();
+        Assert.True(dashboard.SpendUsd >= 0);
     }
 
     [Fact]

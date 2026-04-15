@@ -8,6 +8,7 @@ public record ProviderAttempt(string AttemptId, string RunId, string ProviderNam
 public record ValidationResult(string ValidationId, string CandidateId, string ValidatorName, bool Passed, string Evidence, DateTimeOffset ValidatedAtUtc);
 public record EventRecord(string EventId, string RunId, string Type, string Message, DateTimeOffset CreatedAtUtc);
 public record ArtifactRecord(string ArtifactId, string RunId, string ArtifactType, string RelativePath, DateTimeOffset CreatedAtUtc);
+public record SpendRecord(string SpendId, string RunId, string ModelName, string ProviderName, decimal CostUsd, int PromptTokens, int CompletionTokens, bool CacheHit, DateTimeOffset CreatedAtUtc);
 
 public record ProviderResponse(string ProviderName, bool Success, string Content, string Message);
 public record ValidationOutcome(bool Passed, int ScoreDelta, string Evidence);
