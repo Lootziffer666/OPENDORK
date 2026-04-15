@@ -37,6 +37,25 @@ Weitere Commands: `jobs`, `replay`.
 - Kosten-/Token-Usage pro Completion.
 - SQLite `spend_logs` für Reporting.
 
+
+## GUI
+
+A new Taildrops-inspired web GUI is available at `opendork-gui/` with:
+
+- runtime stats cards
+- run form with CLI preview
+- model catalog management
+- recent runs + artifact counters
+
+Run locally:
+
+```bash
+cd opendork-gui
+python3 -m http.server 8080
+```
+
+Then open `http://localhost:8080`.
+
 ## Config
 
 - `config/providers.json`
