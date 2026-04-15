@@ -1,0 +1,8 @@
+{
+  "profiles": [
+    "interactive",
+    "batch",
+    "overnight_safe",
+    "overnight_aggressive"
+  ]
+}

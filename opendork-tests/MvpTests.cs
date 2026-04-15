@@ -1,9 +1,15 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using OpenDork.Abstractions;
+using OpenDork.Artifacts;
 using OpenDork.Core;
+using OpenDork.Providers;
 using OpenDork.Rules;
+using OpenDork.State;
+using OpenDork.Validation;
 using OpenDork.WrapperBridge;
 using Xunit;
 
@@ -19,38 +25,65 @@ public class MvpTests
     }
 
     [Fact]
-    public void Detects_Limits()
+    public async Task Gateway_Provides_Failover_Budget_And_Cache()
     {
-        var re = new RuleEngine(new RulesConfig([], [new("message cap")], [], 30));
-        Assert.True(re.IsLimit("message cap reached"));
+        var catalog = new ProviderModelCatalog([new ProviderModelDefinition("gpt-4o", "broken", 0.01m, 0.01m)]);
+        var gateway = new LiteLlmStyleGateway(
+            catalog,
+            new ProviderRouter(new ProviderCooldownStore(), new ProviderHealthTracker(), new ProviderReputationTracker()),
+            new ProviderChainResolver(),
+            [new AlwaysFailProvider("broken"), new LocalFallbackClient("local-fallback")],
+            new BudgetGuard(10m, TimeSpan.FromDays(1)),
+            new ResponseCache(TimeSpan.FromMinutes(10)));
+
+        var first = await gateway.CompleteAsync("gpt-4o", "hello [STATUS: GOLD]", "interactive");
+        var second = await gateway.CompleteAsync("gpt-4o", "hello [STATUS: GOLD]", "interactive");
+
+        Assert.True(first.Response.Success);
+        Assert.Equal("local-fallback", first.Response.ProviderName);
+        Assert.True(second.Usage.CacheHit);
+        Assert.Equal(0m, second.Usage.EstimatedCost);
     }
 
     [Fact]
-    public async Task StateMachine_And_Retry_Are_Deterministic()
+    public async Task Validation_Pipeline_Composes_Validators()
     {
-        var temp = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")); Directory.CreateDirectory(temp);
-        var core = new OrchestratorEngine(new QueueStore(Path.Combine(temp, "snap.jsonl")), new JsonlLog(temp),
-            new RuleEngine(new RulesConfig([new("\\[STATUS:\\s*REWORK\\]", RouteStatus.Rework), new("\\[STATUS:\\s*GOLD\\]", RouteStatus.Gold)], [], [], 30)),
-            new FakeBrowser(["generator out", "[STATUS: REWORK]", "generator out 2", "[STATUS: GOLD]"]),
-            new PassSyntax(), new RetryPolicy(2, 0));
-        core.Start();
-        var result = await core.ProcessAsync(new PromptJob("1", "prompt", "js"));
-        Assert.Equal(RouteStatus.Gold, result);
+        var pipeline = new ValidationPipeline([new LengthValidator(), new StatusTagValidator()]);
+        var candidate = new Candidate("c1", "r1", "this is long enough [STATUS: GOLD]", CandidateState.Raw, 0, DateTimeOffset.UtcNow);
+        var result = await pipeline.ExecuteAsync(candidate);
+        Assert.True(result.Passed);
+        Assert.True(result.Score >= 5);
     }
 
     [Fact]
-    public async Task Failure_Status_Is_Handled()
+    public async Task Orchestrator_Persists_State_Artifacts_And_Spend()
     {
-        var temp = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")); Directory.CreateDirectory(temp);
-        var core = new OrchestratorEngine(new QueueStore(Path.Combine(temp, "snap.jsonl")), new JsonlLog(temp),
-            new RuleEngine(new RulesConfig([], [], [], 30)), new FailingBrowser(), new PassSyntax(), new RetryPolicy(1, 0));
-        core.Start();
-        var result = await core.ProcessAsync(new PromptJob("2", "p"));
-        Assert.Equal(RouteStatus.Crap, result);
+        var temp = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(temp);
+        var run = new RunContext("run1", "job1", "hello [STATUS: GOLD]", "interactive", DateTimeOffset.UtcNow);
+
+        var gateway = new LiteLlmStyleGateway(
+            new ProviderModelCatalog([new ProviderModelDefinition("gpt-4o", "openai-compatible", 0.01m, 0.01m)]),
+            new ProviderRouter(new ProviderCooldownStore(), new ProviderHealthTracker(), new ProviderReputationTracker()),
+            new ProviderChainResolver(),
+            [new OpenAiCompatibleClient()],
+            new BudgetGuard(10m, TimeSpan.FromDays(1)),
+            new ResponseCache(TimeSpan.FromHours(1)));
+
+        var store = new SqliteStateStore(Path.Combine(temp, "state.db"));
+        var orchestrator = new RunOrchestrator(gateway, new ValidationPipeline([new LengthValidator(), new StatusTagValidator()]), store, new ArtifactService(temp));
+
+        var candidate = await orchestrator.RunAsync(run, "gpt-4o");
+        Assert.Contains(candidate.State, [CandidateState.Validated, CandidateState.Gold]);
+        Assert.True(File.Exists(Path.Combine(temp, "state.db")));
+        Assert.True(Directory.EnumerateFiles(Path.Combine(temp, "results", "raw")).Any());
+
+        var dashboard = store.GetDashboard();
+        Assert.True(dashboard.SpendUsd >= 0);
     }
 
     [Fact]
-    public void Wrapper_Ipc_Roundtrip()
+    public void Wrapper_Ipc_Roundtrip_Transitional()
     {
         var temp = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")); Directory.CreateDirectory(temp);
         var b = new FileIpcBridge(temp);
@@ -60,16 +93,10 @@ public class MvpTests
         Assert.True(File.Exists(b.RequestsFile));
     }
 
-    private sealed class PassSyntax : ISyntaxGate { public SyntaxGateResult Validate(string content, string? language) => new(true, "ok"); }
-    private sealed class FakeBrowser(string[] outputs) : IBrowserAdapter
+    private sealed class AlwaysFailProvider(string name) : IProviderClient
     {
-        private int _i;
-        public Task<(BrowserJobStatus Status, string Response)> RunRoleAsync(string role, string payload, CancellationToken ct)
-            => Task.FromResult((BrowserJobStatus.Healthy, outputs[_i++]));
-    }
-    private sealed class FailingBrowser : IBrowserAdapter
-    {
-        public Task<(BrowserJobStatus Status, string Response)> RunRoleAsync(string role, string payload, CancellationToken ct)
-            => Task.FromResult((BrowserJobStatus.SelectorFailed, ""));
+        public string Name => name;
+        public Task<ProviderResponse> GenerateAsync(string prompt, CancellationToken ct = default)
+            => Task.FromResult(new ProviderResponse(name, false, string.Empty, "fail"));
     }
 }
