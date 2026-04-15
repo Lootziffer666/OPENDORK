@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "interactive": ["length", "status-tag"],
+    "batch": ["length"],
+    "overnight_safe": ["length", "status-tag"],
+    "overnight_aggressive": ["status-tag"]
+  }
+}
